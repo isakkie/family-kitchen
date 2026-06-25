@@ -27,6 +27,7 @@
       .map(text)
       .find((value) => value && !/首页|菜谱分类|菜单|作品动态|下厨房/.test(value));
     const title = metaTitle || documentTitle || heading || `下厨房菜谱 ${recipeId}`;
+    const coverImage = attr(doc.querySelector("meta[property='og:image'], meta[name='twitter:image']"), "content");
 
     const ingredientRows = [...doc.querySelectorAll(".ings tr, .ings li, [itemprop='recipeIngredient']")];
     const ingredients = ingredientRows
@@ -38,8 +39,20 @@
       })
       .filter((item) => item.name);
 
-    const stepNodes = [...doc.querySelectorAll(".steps .text, .steps li, [itemprop='recipeInstructions']")];
-    const steps = unique(stepNodes.map(text).filter(Boolean));
+    const stepRows = [...doc.querySelectorAll(".steps li, .steps .container, [itemprop='recipeInstructions']")];
+    const stepNodes = stepRows.length ? stepRows : [...doc.querySelectorAll(".steps .text")];
+    const steps = [];
+    const seenSteps = new Set();
+    stepNodes.forEach((node) => {
+      const textNode = node.querySelector?.(".text") || node;
+      const stepText = text(textNode);
+      const image = attr(node.querySelector?.("img"), "src") || attr(node.querySelector?.("img"), "data-src");
+      if (!stepText && !image) return;
+      const key = `${stepText}::${image}`;
+      if (seenSteps.has(key)) return;
+      seenSteps.add(key);
+      steps.push(image ? { text: stepText, image: absolute(image) } : stepText);
+    });
 
     const tipTitle = [...doc.querySelectorAll("h2, h3")].find((node) => /小贴士|贴士|提示/.test(text(node)));
     let tips = "";
@@ -58,6 +71,7 @@
     return {
       title,
       source: url,
+      coverImage,
       ingredients,
       steps,
       tips,

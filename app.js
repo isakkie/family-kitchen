@@ -175,6 +175,7 @@ function parseRecipeText(rawText, sourceUrl = "") {
     id: "",
     title,
     source: sourceUrl,
+    coverImage: "",
     ingredients: sections.ingredients.map(parseIngredientLine).filter(Boolean),
     steps: sections.steps.map((line) => line.replace(/^\d+[.、]\s*/, "")),
     tips: sections.tips.join("\n"),
@@ -189,6 +190,7 @@ function recipeUrlToPlaceholder(url) {
     id: "",
     title: match ? `下厨房菜谱 ${match[1]}` : "待整理菜谱",
     source: url,
+    coverImage: "",
     ingredients: [],
     steps: [],
     tips: "",
@@ -213,18 +215,40 @@ function normalizeRecipe(raw) {
   const recipeId = source.match(/xiachufang\.com\/recipe\/(\d+)/)?.[1];
   const rawTitle = String(raw.title || "").trim();
   const title = (!rawTitle || rawTitle === "首页") && recipeId ? `下厨房菜谱 ${recipeId}` : rawTitle || "未命名菜谱";
-  const steps = Array.isArray(raw.steps) ? raw.steps.map((step) => typeof step === "string" ? step : step.text).filter(Boolean) : splitLines(String(raw.steps || ""));
+  const steps = normalizeSteps(raw.steps, raw.stepImages || raw.step_images || []);
 
   return {
     id: raw.id || crypto.randomUUID(),
     title,
     source,
+    coverImage: String(raw.coverImage || raw.cover_image || raw.image || "").trim(),
     ingredients,
-    steps: [...new Set(steps.map((step) => String(step).trim()).filter(Boolean))],
+    steps,
     tips: String(raw.tips || "").trim(),
     tags: Array.isArray(raw.tags) ? raw.tags.map(String).filter(Boolean) : String(raw.tags || "").split(",").map((tag) => tag.trim()).filter(Boolean),
     notes: String(raw.notes || raw.family_notes || "").trim()
   };
+}
+
+function normalizeSteps(rawSteps, fallbackImages = []) {
+  const imageList = Array.isArray(fallbackImages) ? fallbackImages : splitLines(String(fallbackImages || ""));
+  const sourceSteps = Array.isArray(rawSteps) ? rawSteps : splitLines(String(rawSteps || ""));
+  const seen = new Set();
+  const steps = [];
+
+  sourceSteps.forEach((step, index) => {
+    const textValue = typeof step === "string" ? step : step?.text;
+    const imageValue = typeof step === "string" ? imageList[index] : step?.image || step?.imageUrl || step?.image_url || imageList[index];
+    const text = String(textValue || "").trim();
+    const image = String(imageValue || "").trim();
+    if (!text && !image) return;
+    const key = `${text}::${image}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    steps.push(image ? { text, image } : text);
+  });
+
+  return steps;
 }
 
 function parseBatchInput(value) {
@@ -295,12 +319,15 @@ function textToIngredients(value) {
 
 function recipeFromForm() {
   const id = $("#recipeId").value || crypto.randomUUID();
+  const stepTexts = splitLines($("#stepsInput").value).map((line) => line.replace(/^\d+[.、]\s*/, ""));
+  const stepImages = splitLines($("#stepImagesInput").value);
   return {
     id,
     title: $("#titleInput").value.trim(),
     source: $("#recipeSourceInput").value.trim(),
+    coverImage: $("#coverImageInput").value.trim(),
     ingredients: textToIngredients($("#ingredientsInput").value),
-    steps: splitLines($("#stepsInput").value).map((line) => line.replace(/^\d+[.、]\s*/, "")),
+    steps: normalizeSteps(stepTexts, stepImages),
     tips: $("#tipsInput").value.trim(),
     tags: $("#tagsInput").value.split(",").map((tag) => tag.trim()).filter(Boolean),
     notes: $("#notesInput").value.trim()
@@ -311,8 +338,11 @@ function fillRecipeForm(recipe, status = "编辑中") {
   $("#recipeId").value = recipe.id || "";
   $("#titleInput").value = recipe.title || "";
   $("#recipeSourceInput").value = recipe.source || "";
+  $("#coverImageInput").value = recipe.coverImage || "";
   $("#ingredientsInput").value = ingredientsToText(recipe.ingredients || []);
-  $("#stepsInput").value = (recipe.steps || []).map((step, index) => `${index + 1}. ${step}`).join("\n");
+  const normalizedSteps = normalizeSteps(recipe.steps || []);
+  $("#stepsInput").value = normalizedSteps.map((step, index) => `${index + 1}. ${typeof step === "string" ? step : step.text || ""}`).join("\n");
+  $("#stepImagesInput").value = normalizedSteps.map((step) => typeof step === "string" ? "" : step.image || "").join("\n").trim();
   $("#tipsInput").value = recipe.tips || "";
   $("#tagsInput").value = (recipe.tags || []).join(", ");
   $("#notesInput").value = recipe.notes || "";
@@ -376,8 +406,10 @@ function renderRecipes() {
 function recipeCardTemplate(recipe) {
   const ingredientNames = (recipe.ingredients || []).slice(0, 4).map((item) => item.name).join("、");
   const tags = (recipe.tags || []).slice(0, 3).map((tag) => `<span class="mini-tag">${escapeHtml(tag)}</span>`).join("");
+  const cover = recipe.coverImage ? `<img class="recipe-cover" src="${escapeHtml(recipe.coverImage)}" alt="">` : "";
   return `
     <article class="recipe-card">
+      ${cover}
       <div>
         <h3>${escapeHtml(recipe.title)}</h3>
         <p class="muted">${escapeHtml(ingredientNames || "未填写用料")}</p>
@@ -504,13 +536,25 @@ function addRecipeToShopping(recipe, onlyMissing = false) {
 }
 
 function showDetail(recipe) {
+  const steps = normalizeSteps(recipe.steps || []);
   $("#recipeDetail").innerHTML = `
     <h2>${escapeHtml(recipe.title)}</h2>
     <p class="muted">${escapeHtml(recipe.source || "无来源")}</p>
+    ${recipe.coverImage ? `<img class="detail-cover" src="${escapeHtml(recipe.coverImage)}" alt="">` : ""}
     <h3>用料</h3>
     <ul>${(recipe.ingredients || []).map((item) => `<li>${escapeHtml(item.name)} ${escapeHtml(item.amount || "")}</li>`).join("")}</ul>
     <h3>步骤</h3>
-    <ol>${(recipe.steps || []).map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>
+    <div class="detail-steps">${steps.map((step, index) => {
+      const textValue = typeof step === "string" ? step : step.text || "";
+      const imageValue = typeof step === "string" ? "" : step.image || "";
+      return `
+        <article class="step-row">
+          <div class="step-number">${index + 1}</div>
+          <p class="step-text">${escapeHtml(textValue)}</p>
+          ${imageValue ? `<img class="step-image" src="${escapeHtml(imageValue)}" alt="">` : `<div class="step-image-placeholder"></div>`}
+        </article>
+      `;
+    }).join("")}</div>
     ${recipe.tips ? `<h3>小贴士</h3><p>${escapeHtml(recipe.tips)}</p>` : ""}
     ${recipe.notes ? `<h3>家庭备注</h3><p>${escapeHtml(recipe.notes)}</p>` : ""}
   `;

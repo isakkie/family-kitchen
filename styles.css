@@ -234,6 +234,14 @@ p {
   box-shadow: var(--shadow);
 }
 
+.recipe-cover {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #f0ece4;
+}
+
 .recipe-card h3 {
   margin: 0;
   font-size: 18px;
@@ -394,6 +402,49 @@ dialog::backdrop {
   margin: 0 0 14px;
 }
 
+.detail-cover,
+.step-image {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #f0ece4;
+}
+
+.detail-cover {
+  margin: 10px 0 4px;
+}
+
+.detail-steps {
+  display: grid;
+  gap: 28px;
+}
+
+.step-row {
+  display: grid;
+  grid-template-columns: 52px minmax(160px, 0.8fr) minmax(220px, 1.2fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.step-number {
+  color: #bba76e;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.step-text {
+  margin: 3px 0 0;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.step-image-placeholder {
+  display: none;
+}
+
 #recipeDetail h3 {
   margin: 18px 0 8px;
 }
@@ -462,5 +513,19 @@ dialog::backdrop {
 
   .week-grid {
     grid-template-columns: 1fr;
+  }
+
+  .step-row {
+    grid-template-columns: 42px 1fr;
+    gap: 10px 14px;
+  }
+
+  .step-image,
+  .step-image-placeholder {
+    grid-column: 2;
+  }
+
+  .step-number {
+    font-size: 28px;
   }
 }
