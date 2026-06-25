@@ -1,6 +1,4 @@
 const STORAGE_KEY = "family-kitchen-state-v1";
-const AUTH_STORAGE_KEY = "family-kitchen-auth-v1";
-const ACCESS_PASSWORD_HASH = "7ec57cf4f49ac56e7dc7388b4ac0722dea721924522f6a20a255b3bbf8d3f00d";
 
 const starterRecipes = [
   {
@@ -75,24 +73,6 @@ let activeTag = "";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-
-async function sha256(value) {
-  const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function unlockApp() {
-  localStorage.setItem(AUTH_STORAGE_KEY, "unlocked");
-  document.body.classList.remove("auth-locked");
-  $("#authPassword").value = "";
-  $("#authMessage").textContent = "只给家人使用的入口。";
-}
-
-function lockApp() {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-  document.body.classList.add("auth-locked");
-  $("#authPassword").focus();
-}
 
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -551,20 +531,6 @@ $("#navTabs").addEventListener("click", (event) => {
   if (button) switchView(button.dataset.view);
 });
 
-$("#authForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const password = $("#authPassword").value;
-  const hash = await sha256(password);
-  if (hash === ACCESS_PASSWORD_HASH) {
-    unlockApp();
-    return;
-  }
-  $("#authMessage").textContent = "密码不对，再试一次。";
-  $("#authPassword").select();
-});
-
-$("#lockAppBtn").addEventListener("click", lockApp);
-
 $("#globalSearch").addEventListener("input", renderRecipes);
 
 $("#tagFilters").addEventListener("click", (event) => {
@@ -752,12 +718,6 @@ $("#clearPlanBtn").addEventListener("click", () => {
 render();
 switchView(activeView);
 updatePantryExpirePreview();
-
-if (localStorage.getItem(AUTH_STORAGE_KEY) === "unlocked") {
-  document.body.classList.remove("auth-locked");
-} else {
-  $("#authPassword").focus();
-}
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("./service-worker.js");

@@ -8,25 +8,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body class="auth-locked">
-    <section class="auth-screen" id="authScreen" aria-label="家庭访问密码">
-      <form class="auth-card" id="authForm">
-        <div class="brand auth-brand">
-          <div class="brand-mark">厨</div>
-          <div>
-            <h1>家庭厨房</h1>
-            <p>输入家庭密码</p>
-          </div>
-        </div>
-        <label>
-          家庭密码
-          <input id="authPassword" type="password" autocomplete="current-password" placeholder="输入后进入" />
-        </label>
-        <p class="field-hint" id="authMessage">只给家人使用的入口。</p>
-        <button class="primary-btn" type="submit">进入</button>
-      </form>
-    </section>
-
+  <body>
     <div class="app-shell">
       <aside class="sidebar" aria-label="主导航">
         <div class="brand">
@@ -51,10 +33,7 @@
             <span>⌕</span>
             <input id="globalSearch" type="search" placeholder="搜索菜名、食材、标签" />
           </div>
-          <div class="button-row">
-            <button class="ghost-btn" id="lockAppBtn" type="button">锁定</button>
-            <button class="primary-btn" id="quickAddBtn" type="button">＋ 新菜谱</button>
-          </div>
+          <button class="primary-btn" id="quickAddBtn" type="button">＋ 新菜谱</button>
         </section>
 
         <section class="view active" id="recipesView" aria-label="菜谱">

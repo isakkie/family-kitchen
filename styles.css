@@ -26,10 +26,6 @@ body {
   color: var(--text);
 }
 
-body.auth-locked {
-  overflow: hidden;
-}
-
 button,
 input,
 textarea,
@@ -45,39 +41,6 @@ button {
   display: grid;
   grid-template-columns: 248px 1fr;
   min-height: 100vh;
-}
-
-.auth-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: none;
-  place-items: center;
-  padding: 20px;
-  background: var(--bg);
-}
-
-.auth-locked .auth-screen {
-  display: grid;
-}
-
-.auth-locked .app-shell {
-  filter: blur(8px);
-  pointer-events: none;
-  user-select: none;
-}
-
-.auth-card {
-  width: min(420px, 100%);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 22px;
-  box-shadow: var(--shadow);
-}
-
-.auth-brand {
-  margin-bottom: 22px;
 }
 
 .sidebar {
